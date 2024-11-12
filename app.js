@@ -8,11 +8,11 @@ const homeRoutes = require('./routes/homeRoutes');
 
 const app = express();
 
-app.use(cors({
-    origin: ['http://localhost:3000'], // Array for multiple origins
-    methods: ['GET', 'POST', 'PUT', 'PATCH'],
-    credentials: true
-}));
+// app.use(cors({
+//     origin: ['http://localhost:3000'], // Array for multiple origins
+//     methods: ['GET', 'POST', 'PUT', 'PATCH'],
+//     credentials: true
+// }));
 
 app.use(morgan('dev'));
 app.use(express.json({ limit: '100kb' }));
