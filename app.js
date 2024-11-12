@@ -9,7 +9,7 @@ const homeRoutes = require('./routes/homeRoutes');
 const app = express();
 
 app.use(cors({
-    origin: ['https://userapp-frontend.vercel.app', 'https://pinpaper.in'], // Array for multiple origins
+    origin: ['https://userapp-frontend.vercel.app', 'https://www.pinpaper.in', 'https://pinpaper.in' ], // Array for multiple origins
     methods: ['GET', 'POST', 'PUT', 'PATCH'],
     credentials: true // allows cookies for auth
 }));
