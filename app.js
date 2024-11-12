@@ -4,6 +4,7 @@ const cors = require('cors');
 const ordersRoutes = require('./routes/ordersRoutes');
 const filesRoutes = require('./routes/filesRoutes');
 const cartRoutes = require('./routes/cartRoutes');
+const homeRoutes = require('./routes/homeRoutes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.use('/', homeRoutes);
 app.use('/api/v1/orders', ordersRoutes);
 app.use('/api/v1/files', filesRoutes);
 app.use('/api/v1/cart', cartRoutes);
