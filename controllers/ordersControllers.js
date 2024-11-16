@@ -1,4 +1,4 @@
-const { OrderArticles } = require('../models/ordersModel');
+const { OrderArticles, Orders } = require('../models/ordersModel');
 const { ProjthesBindingUsrs, spiralBindingUsrs, thermalBindingUsrs, pinThePapersUsrs, Pricings } = require('../models/servicesModel');
 const { getSignedUrl } = require('../utils/pinata');
 const { getSpiralBindingPrice } = require('../utils/pricing');
@@ -126,6 +126,73 @@ exports.addToCart = async (req, res) => {
 };
 
 
+
+exports.submitOrder = async (req, res) => {
+    try {
+        // const newArticleIDs = req.body.items.map((item) => {
+        //     const article = await OrderArticles.findOne(item.articleID);
+        //     if(article) {
+        //         return false;
+        //     }
+        //     return item.articleID;
+        // });
+        const orderDetails = {
+            userID: '7993924730',
+            operatorID: 'tbd',
+            articleIDs: req.body.items.map(item => item.articleID),
+            noOfServices: req.body.items.length,
+            callBeforePrint: req.body.callBeforePrint ? 'Yes' : 'No',
+            deliveryOption: 'tbd',
+            // later make db call and calculate price explicitly
+            orderAmount: req.body.totalPrice,
+            paymentStatus: 'pending',
+            orderStatus: 'requested'
+        }
+
+        const submittedOrder = await Orders.create(orderDetails);
+
+        if (!submittedOrder) {
+            return res.status(404).json({ status: 'failed', message: 'error submitting order' });
+        }
+
+        // update status in cart
+        // const updatedCartStatus = await OrderArticles.updateMany(
+        //     {
+        //         userID: orderDetails.userID,
+        //         articleID: { $in: orderDetails.articleIDs }
+        //     },
+        //     { $set: { articleStatus: 'ordered' } }
+        // );
+
+        // if (!updatedCartStatus) {
+        //     return res.status(404).json({ status: 'failed', message: 'error updating cart' });
+        // }
+
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                articleIDs: submittedOrder.articleIDs,
+                noOfServices: submittedOrder.noOfServices,
+                callBeforePrint: submittedOrder.callBeforePrint,
+                orderAmount: submittedOrder.orderAmount,
+                paymentStatus: submittedOrder.paymentStatus,
+                orderStatus: submittedOrder.orderStatus
+            }
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({
+            status: 'failed',
+            message: err.message
+        });
+    }
+};
+
+
+
+
+
 exports.priceTest = async (req, res) => {
     try {
         const operatorID = "OPRADMN79939";
@@ -153,5 +220,3 @@ exports.priceTest = async (req, res) => {
         });
     }
 };
-
-

@@ -283,8 +283,8 @@ exports.updateCartItem = async (req, res) => {
 
 exports.deleteCartItem = async (req, res) => {
     try {
-        const userID = req.body.userID;
-        const articleID = req.body.articleID;
+        const userID = req.query.userID;
+        const articleID = req.query.articleID;
         const deleteItem = await OrderArticles.deleteOne({
             userID: userID,
             articleID: articleID,
