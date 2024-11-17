@@ -25,9 +25,7 @@ const Users = mongoose.model('Users', usersSchema);
 const usersAddressSchema = new mongoose.Schema({
     userMobNumber: {
         type: String,
-        required: true,
-        unique: true
-    },
+        required: true    },
     userStreet: {
         type: String,
         required: true
