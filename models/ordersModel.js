@@ -29,10 +29,14 @@ const OrdersSchema = new mongoose.Schema({
         required: true,
         enum: ["Yes", "No"]
     },
-    deliveryOption: {
+    // deliveryOption: {
+    //     type: String,
+    //     required: true,
+    //     enum: ['tbd', 'Self', '3rdParty']  // Add delivery options as per requirement
+    // },
+    deliveryTypeID: {   // LATER REMOVE THIS, COZ PRESENT IN OrderDeliveryDetails
         type: String,
-        required: true,
-        enum: ['tbd', 'Self', '3rdParty']  // Add delivery options as per requirement
+        required: true
     },
     orderAmount: {
         type: Number,

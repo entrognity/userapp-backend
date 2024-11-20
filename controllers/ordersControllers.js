@@ -1,5 +1,6 @@
 const { OrderArticles, Orders } = require('../models/ordersModel');
 const { ProjthesBindingUsrs, spiralBindingUsrs, thermalBindingUsrs, pinThePapersUsrs, Pricings } = require('../models/servicesModel');
+const { DeliveryTypes, OrderDeliveryDetails } = require('../models/deliveryModel');
 const { getSignedUrl } = require('../utils/pinata');
 const { getSpiralBindingPrice } = require('../utils/pricing');
 
@@ -129,20 +130,14 @@ exports.addToCart = async (req, res) => {
 
 exports.submitOrder = async (req, res) => {
     try {
-        // const newArticleIDs = req.body.items.map((item) => {
-        //     const article = await OrderArticles.findOne(item.articleID);
-        //     if(article) {
-        //         return false;
-        //     }
-        //     return item.articleID;
-        // });
         const orderDetails = {
             userID: '7993924730',
             operatorID: 'tbd',
             articleIDs: req.body.items.map(item => item.articleID),
             noOfServices: req.body.items.length,
             callBeforePrint: req.body.callBeforePrint ? 'Yes' : 'No',
-            deliveryOption: 'tbd',
+            // deliveryOption: 'tbd',
+            deliveryTypeID: req.body.deliveryOption.deliveryTypeID,  // LATER REMOVE THIS, COZ PRESENT IN OrderDeliveryDetails
             // later make db call and calculate price explicitly
             orderAmount: req.body.totalPrice,
             paymentStatus: 'pending',
@@ -154,6 +149,26 @@ exports.submitOrder = async (req, res) => {
         if (!submittedOrder) {
             return res.status(404).json({ status: 'failed', message: 'error submitting order' });
         }
+
+        const orderDeliveryDate = new Date();
+        orderDeliveryDate.setDate(orderDeliveryDate.getDate() + 3);  // later calculate this using some logic
+
+        const deliveryDetails = {
+            orderID: submittedOrder.orderID,
+            deliveryTypeID: submittedOrder.deliveryTypeID,
+            // add an orderBokedDate
+            orderDeliveryDate, 
+            pickupAddressIDFromUsersAddress: req.body.selectedAddress.addressID,
+            // drop address is updated later
+            deliveryStatus: "requested"
+        }
+        const orderDelDtls = await OrderDeliveryDetails.create(deliveryDetails);
+
+        if (!orderDelDtls) {
+            // delete the above created order
+            return res.status(404).json({ status: 'failed', message: 'error submitting order delivery details' });
+        }
+
 
         // update status in cart
         // const updatedCartStatus = await OrderArticles.updateMany(
@@ -177,7 +192,13 @@ exports.submitOrder = async (req, res) => {
                 callBeforePrint: submittedOrder.callBeforePrint,
                 orderAmount: submittedOrder.orderAmount,
                 paymentStatus: submittedOrder.paymentStatus,
-                orderStatus: submittedOrder.orderStatus
+                orderStatus: submittedOrder.orderStatus,
+                orderDeliveryDetails: {
+                    orderDeliveryDate: orderDelDtls.orderDeliveryDate,
+                    pickupAddressID: orderDelDtls.pickupAddressIDFromUsersAddress,
+                    deliveryStatus: orderDelDtls.deliveryStatus
+
+                }
             }
         });
     } catch (err) {
@@ -191,7 +212,7 @@ exports.submitOrder = async (req, res) => {
 
 
 
-
+//only for dev, later delete these
 
 exports.priceTest = async (req, res) => {
     try {
@@ -220,3 +241,58 @@ exports.priceTest = async (req, res) => {
         });
     }
 };
+
+exports.addDeliveryTypes = async (req, res) => {
+    try {
+        const deliveryTypes = await DeliveryTypes.create({
+            deliveryTypeID: "DT1",
+            deliveryTypeName: "standard",
+            deliveryTypeDesc: "DTD1",
+            deliveryTypeTime: 2,
+            deliveryTypePrice: 50
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: deliveryTypes
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({
+            status: 'failed',
+            message: err.message
+        });
+    }
+};
+
+exports.addOrderDeliveryDetails = async (req, res) => {
+    try {
+        const deliveryDetails = await OrderDeliveryDetails.create({
+            orderID: "abc123",
+            deliveryTypeID: "DT1",
+            orderDeliveryDate: new Date(),
+            pickupAddressIDFromUsersAddress: "ADDR123456",
+            dropAddress: {
+                userStreet: "malakpet",
+                userLandmark: "opp lake",
+                userCity: "Hyd",
+                userState: "TS",
+                userPincode: "500024",
+                userGmapUrl: "fgkwhejfejfwefwef"
+            },
+            deliveryStatus: "requested"
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: deliveryDetails
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({
+            status: 'failed',
+            message: err.message
+        });
+    }
+};
+

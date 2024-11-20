@@ -38,3 +38,17 @@ exports.generateArticleID = async () => {
         throw new Error('Failed to generate Article ID');
     }
 };
+
+exports.generateAddressID = async (userMobNumber) => {
+    try {
+        // const length = 8;
+        // const randomBytes = crypto.randomBytes(Math.ceil(length / 2));
+        // const randomHex = randomBytes.toString('hex').slice(0, length);
+        const mobilePart = userMobNumber.slice(-3);
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+        return `ADDR${mobilePart}${timestamp}`.toUpperCase();
+    } catch (err) {
+        console.error('Address ID generation failed:', err);
+        throw new Error('Failed to generate Address ID');
+    }
+};

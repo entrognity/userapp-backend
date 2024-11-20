@@ -12,11 +12,12 @@ exports.getAddress = async (req, res) => {
             });
         }
 
-        const retAddress = await UsersAddress.findOne({
+        const retAddress = await UsersAddress.find({
             userMobNumber: userID
         })
             .select('-__v -_id -userGmapUrl')
             .sort('createdAt');
+        console.log(retAddress);
 
         res.status(200).json({
             status: 'success',
@@ -51,6 +52,25 @@ exports.getUser = async (req, res) => {
             data: user
         });
     } catch (err) {
+        res.status(500).json({
+            status: 'failed',
+            message: err.message
+        });
+    }
+};
+
+exports.addAddress = async (req, res) => {
+    try {
+        const userID = '7993924730';
+        // later do data sanitizations and validations
+        const addrData = req.body;
+        addrData.userMobNumber = userID;
+        const address = await UsersAddress.create(addrData);
+        res.status(200).json({
+            status: 'success',
+            data: address
+        });
+    } catch(err) {
         res.status(500).json({
             status: 'failed',
             message: err.message
