@@ -9,7 +9,7 @@ const userRoutes = require('./routes/userRoutes');
 const app = express();
 
 app.use(cors({
-    origin: ['http://localhost:3000'], // Array for multiple origins
+    origin: ['http://localhost:3000', 'https://userapp-frontend.vercel.app', 'https://www.pinpaper.in', 'https://pinpaper.in'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true
 }));
