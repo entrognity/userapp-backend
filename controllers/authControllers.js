@@ -223,8 +223,8 @@ exports.logout = async (req, res) => {
             expires: new Date(0), // Set the cookie expiration to a past date
             httpOnly: true,       // Ensure the cookie cannot be accessed via JavaScript
             sameSite: 'None',   // Mitigate CSRF risks
+            secure: process.env.NODE_ENV === 'production'
         });
-        if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
 
         // Send a success response
         res.status(200).json({
