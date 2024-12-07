@@ -1,6 +1,7 @@
 const twilio = require('twilio')
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const {sendOTP, verifyEnteredOTP} = require('../services/fast2sms');
 const {Users} = require('../models/userModel');
 
 dotenv.config({ path: '../config.env' });
@@ -13,11 +14,23 @@ exports.sendOTP = async (req, res) => {
             return res.status(400).json({ status: 'failed', message: "Phone number is required" });
         }
 
-        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-        const sentOTP = await client.verify.services(process.env.TWILIO_VERIFY_SERVICE_SID).verifications.create({ to, channel: "sms" });
+        // const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        // const sentOTP = await client.verify.services(process.env.TWILIO_VERIFY_SERVICE_SID).verifications.create({ to, channel: "sms" });
+        
+        const resp = await sendOTP(to);
+        console.log(resp);
+
+        if(resp.status !== "success"){
+            if(resp.statusCode == 995){
+                return res.status(400).json({ status: 'failed', message: "Too many login request. Try again after sometime" });
+            }
+            return res.status(400).json({ status: 'failed', message: "Failed to send OTP. Try again Later" });
+        }
+
+        
         res.status(200).json({
             status: 'success',
-            message: sentOTP
+            message: resp.data
         });
     } catch (err) {
         console.log(err);
@@ -39,14 +52,15 @@ exports.verifyOTP = async (req, res) => {
             return res.status(400).json({ status: 'failed', message: "Phone number and OTP are required" });
         }
 
-        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-        const verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID).verificationChecks.create({ to, code });
+        // const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        // const verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID).verificationChecks.create({ to, code });
+        // verificationCheck.status == "approved"
 
-        if (verificationCheck.status == "approved") {
+        const resp = await verifyEnteredOTP(to, code);
+
+        if (resp.status === "success") {
             // Optionally, check if the user exists in your database
             const user = await Users.findOne({userMobNumber: to }); 
-
-            console.log("user",user);
 
             if(user){
                 isDtlSetup = user.isDetailSetup;
@@ -64,18 +78,21 @@ exports.verifyOTP = async (req, res) => {
                 expires: new Date(
                     Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
                 ),
-                httpOnly: true,
-                sameSite: 'None',
-            };
-            if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
-            console.log(cookieOptions);
+                httpOnly: true,            };
+            if (process.env.NODE_ENV === 'production'){
+                cookieOptions.secure = true;
+                cookieOptions.sameSite = 'None';
+            } else {
+                cookieOptions.sameSite = 'Strict';
+            }
+
             res.cookie('jwt', token, cookieOptions);
 
             return res.status(200).json({
                 status: 'success',
                 userExists: true, // later add logic
                 isDetailSetup: isDtlSetup,
-                message: verificationCheck
+                message: resp
             });
         }
 
@@ -218,13 +235,19 @@ exports.protect = async (req, res, next) => {
 
 exports.logout = async (req, res) => {
     try {
-        // Clear the JWT cookie
-        res.cookie('jwt', '', {
-            expires: new Date(0), // Set the cookie expiration to a past date
-            httpOnly: true,       // Ensure the cookie cannot be accessed via JavaScript
-            sameSite: 'None',   // Mitigate CSRF risks
-            secure: process.env.NODE_ENV === 'production'
-        });
+
+
+        const cookieOptions = {
+            expires: new Date(0),
+            httpOnly: true,            };
+        if (process.env.NODE_ENV === 'production'){
+            cookieOptions.secure = true;
+            cookieOptions.sameSite = 'None';
+        } else {
+            cookieOptions.sameSite = 'Strict';
+        }
+        
+        res.cookie('jwt', '', cookieOptions);
 
         // Send a success response
         res.status(200).json({
