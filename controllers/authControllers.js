@@ -39,10 +39,9 @@ exports.verifyOTP = async (req, res) => {
             return res.status(400).json({ status: 'failed', message: "Phone number and OTP are required" });
         }
 
-        // const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-        // const verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID).verificationChecks.create({ to, code });
+        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        const verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID).verificationChecks.create({ to, code });
 
-        const verificationCheck = { status: "approved" };
         if (verificationCheck.status == "approved") {
             // Optionally, check if the user exists in your database
             const user = await Users.findOne({userMobNumber: to }); 
