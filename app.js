@@ -1,6 +1,8 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const authRoutes = require('./routes/authRoutes');
 const ordersRoutes = require('./routes/ordersRoutes');
 const filesRoutes = require('./routes/filesRoutes');
 const cartRoutes = require('./routes/cartRoutes');
@@ -18,8 +20,10 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '100kb' }));
 // app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Routes
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/orders', ordersRoutes);
 app.use('/api/v1/files', filesRoutes);
 app.use('/api/v1/cart', cartRoutes);

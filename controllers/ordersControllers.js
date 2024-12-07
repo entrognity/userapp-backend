@@ -51,7 +51,7 @@ exports.addToCart = async (req, res) => {
         switch (req.body.articleType) {
             case 'spiralBinding':
                 const spiralDetails = await spiralBindingData(req);
-
+ 
                 spiralDetails.userID = userID;
                 spiralDetails.articleStatus = 'inCart';
 
@@ -128,10 +128,11 @@ exports.addToCart = async (req, res) => {
 
 
 
+
 exports.submitOrder = async (req, res) => {
     try {
         const orderDetails = {
-            userID: '7993924730',
+            userID: req.userID,
             operatorID: 'tbd',
             articleIDs: req.body.items.map(item => item.articleID),
             noOfServices: req.body.items.length,
@@ -141,7 +142,7 @@ exports.submitOrder = async (req, res) => {
             // later make db call and calculate price explicitly
             orderAmount: req.body.totalPrice,
             paymentStatus: 'pending',
-            orderStatus: 'requested'
+            orderStatus: 'completed'  // for this part of time later logic need to be changed, as paymnet gateway is not integrated
         }
 
         const submittedOrder = await Orders.create(orderDetails);
@@ -171,22 +172,23 @@ exports.submitOrder = async (req, res) => {
 
 
         // update status in cart
-        // const updatedCartStatus = await OrderArticles.updateMany(
-        //     {
-        //         userID: orderDetails.userID,
-        //         articleID: { $in: orderDetails.articleIDs }
-        //     },
-        //     { $set: { articleStatus: 'ordered' } }
-        // );
+        const updatedCartStatus = await OrderArticles.updateMany(
+            {
+                userID: orderDetails.userID,
+                articleID: { $in: orderDetails.articleIDs }
+            },
+            { $set: { articleStatus: 'ordered' } }
+        );
 
-        // if (!updatedCartStatus) {
-        //     return res.status(404).json({ status: 'failed', message: 'error updating cart' });
-        // }
+        if (!updatedCartStatus) {
+            return res.status(404).json({ status: 'failed', message: 'error updating cart' });
+        }
 
 
         res.status(200).json({
             status: 'success',
             data: {
+                orderID: submittedOrder.orderID,
                 articleIDs: submittedOrder.articleIDs,
                 noOfServices: submittedOrder.noOfServices,
                 callBeforePrint: submittedOrder.callBeforePrint,
@@ -209,6 +211,110 @@ exports.submitOrder = async (req, res) => {
         });
     }
 };
+
+
+exports.getOrders = async (req, res) => {
+    try {
+        const queryS = {};
+        
+        // use with auth logic
+        //  if(req.query.userID){
+        //     queryS.userID = req.query.userID;
+        // }else{
+        //     return res.status(400).json({ error: 'User ID Not Found' });
+        // }
+        queryS.userID = req.userID;
+        // queryS.userID = '7993924730';
+        const allOrders = await Orders.aggregate([
+            // Initial match to filter orders early
+            { 
+                $match: queryS 
+            },
+            // Single lookup for articles with service filtering built in
+            {
+                $lookup: {
+                    from: 'orderarticles',
+                    let: { articleIds: '$articleIDs' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $in: ['$articleID', '$$articleIds'] },
+                            }
+                        },
+                        // Include service lookup within the articles pipeline
+                        {
+                            $lookup: {
+                                from: 'services',
+                                localField: 'serviceID',
+                                foreignField: 'serviceID',
+                                as: 'service'
+                            }
+                        },
+                        // Project only needed fields and map service name
+                        {
+                            $project: {
+                                articleID: 1,
+                                serviceID: 1,
+                                serviceName: {
+                                    $ifNull: [
+                                        { $arrayElemAt: ['$service.serviceName', 0] },
+                                        'Unknown Service'
+                                    ]
+                                },
+                                filesDetails: 1,
+                                noOfPages: 1,
+                                noOfCopies: 1,
+                                printColor: 1,
+                                printSides: 1,
+                                articleAmount: 1,
+                                note: 1,
+                                createdAt: 1
+                            }
+                        },
+                        // Sort articles by createdAt within the lookup
+                        { $sort: { createdAt: 1 } }
+                    ],
+                    as: 'articles'
+                }
+            },
+            
+            // Project final order structure
+            {
+                $project: {
+                    _id: 0,  // only _id is allowed for this type of syntax
+                    orderID: 1,
+                    // noOfServices,
+                    callBeforePrint: 1,
+                    deliveryTypeID: 1,  // later instead of ID send name
+                    orderAmount: 1,
+                    orderStatus: 1,
+                    createdAt: 1,
+                    articles: 1,
+                    updatedAt: 1
+                }
+            },
+            
+            // Final sort of orders
+            { 
+                $sort: { createdAt: -1 }
+            }
+        ]);
+
+        res.status(200).json({
+            status: 'success',
+            data: allOrders
+        })
+    } catch(err) {
+        res.status(400).json({
+            status: 'failed',
+            message: err.message
+        })
+    }
+}
+
+
+
+
 
 
 

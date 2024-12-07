@@ -44,7 +44,7 @@ const signUrls = async (filesUriArray) => {
 exports.addToCart = async (req, res) => {
     try {
         let newArticle;
-        const userID = '7993924730'; // Example hardcoded user ID; ideally, obtain this dynamically
+        const userID = req.userID; // Example hardcoded user ID; ideally, obtain this dynamically
         console.log(req.body);
         if (!req.body.filesDetails || req.body.filesDetails.length === 0) {
             return res.status(404).json({ message: "Files not found" });
@@ -136,7 +136,9 @@ exports.addToCart = async (req, res) => {
 
 exports.getCartItems = async (req, res) => {
     try {
-        const userID = req.query.userID;
+        // const userID = req.query.userID;
+        const userID = req.userID;
+        console.log(userID)
 
         if (!userID) {
             return res.status(400).json({
@@ -151,6 +153,8 @@ exports.getCartItems = async (req, res) => {
         })
             .select('-__v -_id -userID -filesUri -aricleStatus -createdAt -updatedAt')
             .sort('createdAt');
+
+        // console.log(cartItems);
 
         res.status(200).json({
             status: 'success',
@@ -169,7 +173,7 @@ exports.getCartItems = async (req, res) => {
 exports.updateCartItem = async (req, res) => {
     try {
         let newArticle;
-        const userID = '7993924730'; // Example hardcoded user ID; ideally, obtain this dynamically
+        const userID = req.userID; // Example hardcoded user ID; ideally, obtain this dynamically
         console.log(req.body);
         if (!req.body.filesDetails || req.body.filesDetails.length === 0) {
             return res.status(404).json({ message: "Files not found" });
@@ -283,7 +287,7 @@ exports.updateCartItem = async (req, res) => {
 
 exports.deleteCartItem = async (req, res) => {
     try {
-        const userID = req.query.userID;
+        const userID = req.userID;
         const articleID = req.query.articleID;
         const deleteItem = await OrderArticles.deleteOne({
             userID: userID,
