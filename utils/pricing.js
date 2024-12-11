@@ -1,5 +1,6 @@
 const { Pricings } = require('../models/servicesModel');
 
+// refine the logic later
 exports.getSpiralBindingPrice = async (req) => {
     try {
         let articlePrice = 0;
